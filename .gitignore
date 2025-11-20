@@ -169,3 +169,4 @@ logs/*.log
 
 testing.ipynb
 vlm_latest.tar
+coco2017

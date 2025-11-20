@@ -169,6 +169,50 @@ The script requires a dataset formatted according to the LLaVA specification. Th
 
 </details>
 
+### Convert COCO annotations to LLaVA format
+
+Use `scripts/convert_coco_to_llava.py` to turn the official COCO detection
+annotations into the JSON structure required by this repository. The script
+reads the `instances_{split}.json` files, converts every bounding box into a
+question/answer pair, and emits a LLaVA-style dataset that can be fed directly
+to the training scripts.
+
+```bash
+python scripts/convert_coco_to_llava.py \
+  --coco-root /path/to/coco2017 \
+  --split train2017 \
+  --bbox-per-image 4 \
+  --min-area 400 \
+  --output /path/to/coco_train_llava.json
+```
+
+OR
+
+```bash
+python scripts/convert_coco_to_llava.py \
+  --coco-root /path/to/coco2017 \
+  --split train2017 \
+  --output /path/to/coco_train_llava.json
+```
+
+Adjust `--bbox-per-image`, `--min-area`, and `--max-samples` to control the
+number of Q/A pairs per image and the overall dataset size.
+
+--coco-root /path/to/coco2017:
+Specifies the root directory of the COCO dataset. The script will look for annotations/instances_<split>.json and the corresponding train2017/ and val2017/ image folders under this directory, so it must point to a path that contains the annotations/ subdirectory.
+
+--split train2017:
+Specifies which COCO split to convert (train2017 or val2017). The script opens annotations/instances_<split>.json based on this name and processes only the images and annotations belonging to this split.
+
+--bbox-per-image 4:
+Limits the maximum number of bounding boxes kept for each image. When this option is set, the script sorts all boxes by area (descending) and keeps the top N boxes. This helps control the number of dialogue turns and prevents samples from becoming too long. If not set (default: None), all boxes in the image will be kept.
+
+--min-area 400:
+Filters out boxes that are too small. Only objects with area >= 400 (in pixel²) are included in the output, which helps eliminate noise or extremely small objects that add little value.
+
+--output /path/to/coco_train_llava.json:
+Specifies where to save the generated LLaVA-format JSON file. After conversion, the script writes all dialogue data to this path, and the result can be used directly for fine-tuning.
+
 <details>
 <summary>Example for multi image dataset</summary>
 

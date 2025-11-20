@@ -3,8 +3,10 @@
 
 # MODEL_NAME="Qwen/Qwen2-VL-7B-Instruct"
 # MODEL_NAME="Qwen/Qwen2-VL-2B-Instruct"
-MODEL_NAME="Qwen/Qwen2.5-VL-3B-Instruct"
+# MODEL_NAME="Qwen/Qwen2.5-VL-3B-Instruct"
 # MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct"
+# MODEL_NAME="Qwen/Qwen3-VL-4B-Instruct"
+MODEL_NAME="/nas_pub_data/models/base/qwen3-vl-4b-instruct"
 
 export PYTHONPATH=src:$PYTHONPATH
 
@@ -17,7 +19,7 @@ GRAD_ACCUM_STEPS=$((GLOBAL_BATCH_SIZE / (BATCH_PER_DEVICE * NUM_DEVICES)))
 # You should freeze the the merger also, becuase the merger is included in the vision_tower.
 
 deepspeed src/train/train_sft.py \
-    --use_liger True \
+    --use_liger False \
     --lora_enable True \
     --vision_lora True \
     --use_dora False \
@@ -28,8 +30,8 @@ deepspeed src/train/train_sft.py \
     --num_lora_modules -1 \
     --deepspeed scripts/zero3.json \
     --model_id $MODEL_NAME \
-    --data_path /path/to/your/training/data.json \
-    --image_folder /path/to/your/image/folder \
+    --data_path coco2017/coco_train_llava.json \
+    --image_folder coco2017/train2017 \
     --remove_unused_columns False \
     --freeze_vision_tower True \
     --freeze_llm True \
