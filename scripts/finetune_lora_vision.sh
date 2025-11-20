@@ -6,7 +6,7 @@
 # MODEL_NAME="Qwen/Qwen2.5-VL-3B-Instruct"
 # MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct"
 # MODEL_NAME="Qwen/Qwen3-VL-4B-Instruct"
-MODEL_NAME="/nas_pub_data/models/base/qwen3-vl-4b-instruct"
+MODEL_NAME="/workspace/qwen3-vl-4b-instruct"
 
 export PYTHONPATH=src:$PYTHONPATH
 

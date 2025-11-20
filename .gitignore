@@ -169,4 +169,5 @@ logs/*.log
 
 testing.ipynb
 vlm_latest.tar
-coco2017
+coco2017/
+qwen3-vl-4b-instruct/
