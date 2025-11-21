@@ -51,7 +51,7 @@ deepspeed src/train/train_sft.py \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --tf32 True \
-    --gradient_checkpointing True \
+    --gradient_checkpointing False \
     --report_to tensorboard \
     --lazy_preprocess True \
     --save_strategy "steps" \
