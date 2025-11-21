@@ -169,5 +169,7 @@ logs/*.log
 
 testing.ipynb
 vlm_latest.tar
+qwen_finetune.tar
+qwen_finetune.zip
 coco2017/
-qwen3-vl-4b-instruct/
+Qwen3-VL-4B-Instruct/
