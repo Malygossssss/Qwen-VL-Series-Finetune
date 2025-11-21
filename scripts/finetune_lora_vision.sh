@@ -10,7 +10,7 @@ MODEL_NAME="/tangchongyuan/QWen-VL-finetuning/Qwen3-VL-4B-Instruct"
 
 export PYTHONPATH=src:$PYTHONPATH
 
-GLOBAL_BATCH_SIZE=64
+GLOBAL_BATCH_SIZE=16
 BATCH_PER_DEVICE=1
 NUM_DEVICES=2
 GRAD_ACCUM_STEPS=$((GLOBAL_BATCH_SIZE / (BATCH_PER_DEVICE * NUM_DEVICES)))
@@ -28,7 +28,7 @@ deepspeed src/train/train_sft.py \
     --lora_alpha 64 \
     --lora_dropout 0.05 \
     --num_lora_modules -1 \
-    --deepspeed scripts/zero3.json \
+    --deepspeed scripts/zero2_offload.json \
     --model_id $MODEL_NAME \
     --data_path coco2017/coco_train_llava.json \
     --image_folder coco2017/train2017 \
@@ -43,18 +43,18 @@ deepspeed src/train/train_sft.py \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
-    --image_min_pixels $((256 * 28 * 28)) \
-    --image_max_pixels $((1280 * 28 * 28)) \
+    --image_min_pixels $((128 * 32 * 32)) \
+    --image_max_pixels $((256 * 32 * 32)) \
     --learning_rate 2e-4 \
     --weight_decay 0.1 \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --tf32 True \
-    --gradient_checkpointing False \
+    --gradient_checkpointing True \
     --report_to tensorboard \
     --lazy_preprocess True \
     --save_strategy "steps" \
     --save_steps 200 \
     --save_total_limit 10 \
-    --dataloader_num_workers 4
+    --dataloader_num_workers 4 

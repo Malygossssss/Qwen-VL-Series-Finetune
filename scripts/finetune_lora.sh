@@ -4,14 +4,14 @@
 # MODEL_NAME="Qwen/Qwen2-VL-2B-Instruct"
 # MODEL_NAME="Qwen/Qwen2.5-VL-3B-Instruct"
 # MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct"
-
-MODEL_NAME="Qwen/Qwen3-VL-4B-Instruct"
+# MODEL_NAME="Qwen/Qwen3-VL-4B-Instruct"
+MODEL_NAME="/tangchongyuan/QWen-VL-finetuning/Qwen3-VL-4B-Instruct"
 
 export PYTHONPATH=src:$PYTHONPATH
 
-GLOBAL_BATCH_SIZE=128
-BATCH_PER_DEVICE=4
-NUM_DEVICES=8
+GLOBAL_BATCH_SIZE=64
+BATCH_PER_DEVICE=1
+NUM_DEVICES=2
 GRAD_ACCUM_STEPS=$((GLOBAL_BATCH_SIZE / (BATCH_PER_DEVICE * NUM_DEVICES)))
 
 # If you want to tune the `embed_token` with LoRA, You need to tune `lm_head` together
@@ -29,15 +29,15 @@ deepspeed src/train/train_sft.py \
     --num_lora_modules -1 \
     --deepspeed scripts/zero3_offload.json \
     --model_id $MODEL_NAME \
-    --data_path /path/to/your/training/data.json \
-    --image_folder /path/to/your/image/folder \
+    --data_path coco2017/coco_train_llava.json \
+    --image_folder coco2017/train2017 \
     --remove_unused_columns False \
-    --freeze_vision_tower False \
+    --freeze_vision_tower True \
     --freeze_llm True \
-    --freeze_merger False \
+    --freeze_merger True \
     --bf16 True \
     --fp16 False \
-    --disable_flash_attn2 False \
+    --disable_flash_attn2 True \
     --output_dir output/testing_lora \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
