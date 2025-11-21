@@ -9,7 +9,8 @@ from transformers import (
     HfArgumentParser, 
     Qwen2_5_VLForConditionalGeneration,
     Qwen3VLForConditionalGeneration,
-    Qwen3VLMoeForConditionalGeneration
+    Qwen3VLMoeForConditionalGeneration,
+    TrainerCallback,
 )
 from src.trainer import QwenSFTTrainer
 from src.dataset import make_supervised_data_module
@@ -29,6 +30,31 @@ local_rank = None
 def rank0_print(*args):
     if local_rank == 0 or local_rank == '0' or local_rank is None:
         print(*args)
+
+class CUDAMemoryCallback(TrainerCallback):
+
+    def __init__(self, log_summary: bool = False, log_allocated: bool = False, log_reserved: bool = False):
+        self.log_summary = log_summary
+        self.log_allocated = log_allocated
+        self.log_reserved = log_reserved
+
+    def on_log(self, args, state, control, **kwargs):
+        if not torch.cuda.is_available():
+            return
+
+        if args.local_rank not in (-1, 0):
+            return
+
+        if self.log_allocated:
+            allocated_gb = torch.cuda.memory_allocated() / (1024 ** 3)
+            rank0_print(f"[CUDA] Step {state.global_step}: memory_allocated={allocated_gb:.2f} GB")
+
+        if self.log_reserved:
+            reserved_gb = torch.cuda.memory_reserved() / (1024 ** 3)
+            rank0_print(f"[CUDA] Step {state.global_step}: memory_reserved={reserved_gb:.2f} GB")
+
+        if self.log_summary:
+            rank0_print(f"[CUDA] Memory summary at step {state.global_step}:\n{torch.cuda.memory_summary()}")
 
 def find_target_linear_names(model, num_lora_modules=-1, lora_namespan_exclude=[], verbose=True):
     linear_cls = torch.nn.modules.Linear
@@ -265,6 +291,15 @@ def train():
         args=training_args,
         **data_module
     )
+
+    if training_args.log_memory_summary or training_args.log_memory_allocated or training_args.log_memory_reserved:
+        trainer.add_callback(
+            CUDAMemoryCallback(
+                log_summary=training_args.log_memory_summary,
+                log_allocated=training_args.log_memory_allocated,
+                log_reserved=training_args.log_memory_reserved,
+            )
+        )
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)

@@ -150,6 +150,18 @@ class TrainingArguments(HFTrainingArguments):
     lora_namespan_exclude: str = field(default=None, metadata={"help": "List of namespan to exclude for LoRA"})
     num_lora_modules: int = -1
     use_liger: bool = True
+    log_memory_summary: bool = field(
+        default=False,
+        metadata={"help": "Log torch.cuda.memory_summary() at each logging step."}
+    )
+    log_memory_allocated: bool = field(
+        default=False,
+        metadata={"help": "Log torch.cuda.memory_allocated() at each logging step."}
+    )
+    log_memory_reserved: bool = field(
+        default=False,
+        metadata={"help": "Log torch.cuda.memory_reserved() at each logging step."}
+    )
 
 @dataclass
 class DPOArguments(DPOConfigTRL):
