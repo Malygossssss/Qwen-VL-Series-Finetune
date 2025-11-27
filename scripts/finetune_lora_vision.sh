@@ -39,14 +39,12 @@ deepspeed src/train/train_sft.py \
     --bf16 True \
     --fp16 False \
     --disable_flash_attn2 True \
-    --output_dir output/qwen_lora_vision_test \
+    --output_dir output/lora_vision_test \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
     --image_min_pixels $((128 * 32 * 32)) \
-    --image_max_pixels $((256 * 32 * 32)) \
-    --image_resized_width 512 \
-    --image_resized_height 512 \
+    --image_max_pixels $((512 * 32 * 32)) \
     --learning_rate 2e-4 \
     --weight_decay 0.1 \
     --warmup_ratio 0.03 \
@@ -59,7 +57,10 @@ deepspeed src/train/train_sft.py \
     --log_memory_allocated True \
     --log_memory_summary False \
     --log_memory_reserved True \
+    --clear_cuda_cache False \
     --save_strategy "steps" \
-    --save_steps 200 \
+    --save_steps 100 \
     --save_total_limit 10 \
     --dataloader_num_workers 4
+        # --image_resized_width 512 \
+    # --image_resized_height 512 \

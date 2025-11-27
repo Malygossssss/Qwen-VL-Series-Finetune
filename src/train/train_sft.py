@@ -33,10 +33,17 @@ def rank0_print(*args):
 
 class CUDAMemoryCallback(TrainerCallback):
 
-    def __init__(self, log_summary: bool = False, log_allocated: bool = False, log_reserved: bool = False):
+    def __init__(
+        self,
+        log_summary: bool = False,
+        log_allocated: bool = False,
+        log_reserved: bool = False,
+        clear_cuda_cache: bool = False,
+    ):
         self.log_summary = log_summary
         self.log_allocated = log_allocated
         self.log_reserved = log_reserved
+        self.clear_cuda_cache = clear_cuda_cache
 
     def on_log(self, args, state, control, **kwargs):
         if not torch.cuda.is_available():
@@ -55,6 +62,9 @@ class CUDAMemoryCallback(TrainerCallback):
 
         if self.log_summary:
             rank0_print(f"[CUDA] Memory summary at step {state.global_step}:\n{torch.cuda.memory_summary()}")
+
+        if self.clear_cuda_cache:
+            torch.cuda.empty_cache()
 
 def find_target_linear_names(model, num_lora_modules=-1, lora_namespan_exclude=[], verbose=True):
     linear_cls = torch.nn.modules.Linear
@@ -298,6 +308,7 @@ def train():
                 log_summary=training_args.log_memory_summary,
                 log_allocated=training_args.log_memory_allocated,
                 log_reserved=training_args.log_memory_reserved,
+                clear_cuda_cache=training_args.clear_cuda_cache,
             )
         )
 
