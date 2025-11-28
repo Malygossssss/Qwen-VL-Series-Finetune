@@ -9,7 +9,7 @@ MODEL_NAME="/tangchongyuan/QWen-VL-finetuning/Qwen3-VL-4B-Instruct"
 
 export PYTHONPATH=src:$PYTHONPATH
 
-GLOBAL_BATCH_SIZE=64
+GLOBAL_BATCH_SIZE=32
 BATCH_PER_DEVICE=1
 NUM_DEVICES=2
 GRAD_ACCUM_STEPS=$((GLOBAL_BATCH_SIZE / (BATCH_PER_DEVICE * NUM_DEVICES)))
@@ -27,7 +27,6 @@ deepspeed src/train/train_sft.py \
     --lora_alpha 64 \
     --lora_dropout 0.05 \
     --num_lora_modules -1 \
-    --deepspeed scripts/zero3_offload.json \
     --model_id $MODEL_NAME \
     --data_path coco2017/coco_train_llava.json \
     --image_folder coco2017/train2017 \
@@ -42,8 +41,8 @@ deepspeed src/train/train_sft.py \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
-    --image_min_pixels $((256 * 28 * 28)) \
-    --image_max_pixels $((512 * 28 * 28)) \
+    --image_min_pixels $((256 * 32 * 32)) \
+    --image_max_pixels $((512 * 32 * 32)) \
     --learning_rate 1e-4 \
     --merger_lr 1e-5 \
     --vision_lr 2e-6 \
@@ -58,4 +57,6 @@ deepspeed src/train/train_sft.py \
     --save_strategy "steps" \
     --save_steps 200 \
     --save_total_limit 10 \
-    --dataloader_num_workers 4
+    --dataloader_num_workers 4  \
+    --log_step_memory True
+    # --deepspeed scripts/zero3_offload.json \

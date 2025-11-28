@@ -17,6 +17,24 @@ from transformers.pytorch_utils import (
 )
 from train.train_utils import get_peft_state_maybe_zero_3, get_peft_state_non_lora_maybe_zero_3
 
+def print_cuda_mem(step_tag: str = "", local_rank=None):
+    if not torch.cuda.is_available():
+        return
+
+    if local_rank not in (-1, 0, None):
+        return
+
+    torch.cuda.synchronize()
+    allocated = torch.cuda.memory_allocated() / 1024 ** 2
+    reserved = torch.cuda.memory_reserved() / 1024 ** 2
+    max_alloc = torch.cuda.max_memory_allocated() / 1024 ** 2
+    max_reserved = torch.cuda.max_memory_reserved() / 1024 ** 2
+    print(
+        f"[MEM][{step_tag}] alloc={allocated:.1f}MB, reserved={reserved:.1f}MB, "
+        f"max_alloc={max_alloc:.1f}MB, max_reserved={max_reserved:.1f}MB",
+        flush=True,
+    )
+
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
     from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
@@ -35,6 +53,44 @@ class QwenSFTTrainer(Trainer):
 
     def __init__(self, *args, **kwargs):
         super(QwenSFTTrainer, self).__init__(*args, **kwargs)
+
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        log_step_memory = getattr(self.args, "log_step_memory", False)
+        step_id = self.state.global_step + 1
+
+        if log_step_memory:
+            print_cuda_mem(f"step {step_id} - before forward", self.args.local_rank)
+
+        loss_outputs = super().compute_loss(
+            model,
+            inputs,
+            return_outputs=return_outputs,
+            num_items_in_batch=num_items_in_batch,
+        )
+
+        if return_outputs:
+            loss, outputs = loss_outputs
+        else:
+            loss, outputs = loss_outputs, None
+
+        if log_step_memory:
+            print_cuda_mem(f"step {step_id} - after forward", self.args.local_rank)
+            print_cuda_mem(f"step {step_id} - after loss", self.args.local_rank)
+
+        if return_outputs:
+            return loss, outputs
+        return loss
+
+    def backward(self, loss, **kwargs):
+        super().backward(loss, **kwargs)
+        if getattr(self.args, "log_step_memory", False):
+            step_id = self.state.global_step + 1
+            print_cuda_mem(f"step {step_id} - after backward", self.args.local_rank)
+
+    def optimizer_step(self, epoch, ignore_skip=False):
+        super().optimizer_step(epoch, ignore_skip=ignore_skip)
+        if getattr(self.args, "log_step_memory", False):
+            print_cuda_mem(f"step {self.state.global_step} - after optimizer", self.args.local_rank)
 
     def create_optimizer(self):
         """

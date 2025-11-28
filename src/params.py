@@ -166,6 +166,10 @@ class TrainingArguments(HFTrainingArguments):
         default=False,
         metadata={"help": "Call torch.cuda.empty_cache() after each memory log to release cached blocks."}
     )
+    log_step_memory: bool = field(
+        default=False,
+        metadata={"help": "Print CUDA memory details at key points in every training step."}
+    )
 
 @dataclass
 class DPOArguments(DPOConfigTRL):
