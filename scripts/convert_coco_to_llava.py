@@ -97,29 +97,38 @@ def format_coordinate(value: float) -> str:
     return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
-def build_question(idx: int, bbox: BBox, include_image_token: bool) -> str:
-    x1, y1, x2, y2 = coco_bbox_to_xyxy(bbox)
-    coords = ", ".join(
-        [
-            format_coordinate(coord)
-            for coord in (x1, y1, x2, y2)
-        ]
-    )
+def build_user_prompt(include_image_token: bool) -> str:
     prompt = (
-        f"Bounding box #{idx + 1} is located at (x1, y1, x2, y2) = ({coords}). "
-        "What object is inside this region?"
+        "Locate every instance that belongs to the following COCO2017 categories: "
+        "'airplane', 'apple', 'backpack', 'banana', 'baseball bat', 'baseball glove', "
+        "'bear', 'bed', 'bench', 'bicycle', 'bird', 'boat', 'book', 'bottle', 'bowl', "
+        "'broccoli', 'bus', 'cake', 'car', 'carrot', 'cat', 'cell phone', 'chair', "
+        "'clock', 'couch', 'cow', 'cup', 'dining table', 'dog', 'donut', 'elephant', "
+        "'fire hydrant', 'fork', 'frisbee', 'giraffe', 'hair drier', 'handbag', 'horse', "
+        "'hot dog', 'keyboard', 'kite', 'knife', 'laptop', 'microwave', 'motorcycle', "
+        "'mouse', 'orange', 'oven', 'parking meter', 'person', 'pizza', 'potted plant', "
+        "'refrigerator', 'remote', 'sandwich', 'scissors', 'sheep', 'sink', 'skateboard', "
+        "'skis', 'snowboard', 'spoon', 'sports ball', 'stop sign', 'suitcase', 'surfboard', "
+        "'teddy bear', 'tennis racket', 'tie', 'toaster', 'toilet', 'toothbrush', "
+        "'traffic light', 'train', 'truck', 'tv', 'umbrella', 'vase', 'wine glass', 'zebra'. "
+        "Report each detection as {\"bbox_2d\": [x1, y1, x2, y2], \"label\": \"class_name\"} in JSON format. "
+        "Use the key name 'label' (not 'category')."
     )
     return ("<image>\n" if include_image_token else "") + prompt
 
 
-def build_answer(category_name: str, bbox: BBox) -> str:
-    x1, y1, x2, y2 = coco_bbox_to_xyxy(bbox)
-    coords = ", ".join(
-        format_coordinate(coord) for coord in (x1, y1, x2, y2)
-    )
-    return (
-        f"The region corresponds to a '{category_name}' and covers coordinates ({coords})."
-    )
+def build_assistant_response(selected: Iterable[dict], categories: Dict[int, str]) -> str:
+    detections = []
+    for ann in selected:
+        x1, y1, x2, y2 = coco_bbox_to_xyxy(ann["bbox"])
+        detections.append(
+            {
+                "bbox_2d": [x1, y1, x2, y2],
+                "label": categories.get(ann.get("category_id", -1), "unknown object"),
+            }
+        )
+
+    return json.dumps(detections, ensure_ascii=False, indent=4)
 
 
 def select_annotations(anns: Iterable[dict], bbox_per_image: int | None, min_area: float) -> List[dict]:
@@ -152,18 +161,12 @@ def convert_split(
         if not selected:
             continue
 
-        conversations = []
-        for idx, ann in enumerate(selected):
-            category_name = categories.get(ann.get("category_id", -1), "unknown object")
-            include_token = always_include_image_token or idx == 0
-            question = build_question(idx, ann["bbox"], include_token)
-            answer = build_answer(category_name, ann["bbox"])
-            conversations.extend(
-                [
-                    {"from": "human", "value": question},
-                    {"from": "gpt", "value": answer},
-                ]
-            )
+        user_prompt = build_user_prompt(include_image_token=True)
+        assistant_response = build_assistant_response(selected, categories)
+        conversations = [
+            {"from": "human", "value": user_prompt},
+            {"from": "gpt", "value": assistant_response},
+        ]
 
         dataset.append(
             {
