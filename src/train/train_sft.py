@@ -229,7 +229,7 @@ def train():
     )
 
     if training_args.gradient_checkpointing:
-        if training_args.vision_lora:
+        if training_args.vision_lora or training_args.lora_enable:
             training_args.gradient_checkpointing_kwargs = {"use_reentrant": False}
         else:
             training_args.gradient_checkpointing_kwargs = {"use_reentrant": True}

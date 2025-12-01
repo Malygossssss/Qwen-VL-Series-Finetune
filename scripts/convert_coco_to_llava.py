@@ -133,6 +133,7 @@ def convert_split(
     images: Dict[int, dict],
     categories: Dict[int, str],
     annotations: Dict[int, List[dict]],
+    image_root: Path,
     bbox_per_image: int | None,
     min_area: float,
     max_samples: int | None,
@@ -167,7 +168,7 @@ def convert_split(
         dataset.append(
             {
                 "id": str(images[image_id]["id"]),
-                "image": images[image_id]["file_name"],
+                "image": str((image_root / images[image_id]["file_name"]).resolve()),
                 "conversations": conversations,
             }
         )
@@ -185,10 +186,12 @@ def main() -> None:
         raise FileNotFoundError(f"Could not find {instances_path}")
 
     images, categories, annotations = load_instances(instances_path)
+    image_root = args.coco_root / args.split
     dataset = convert_split(
         images=images,
         categories=categories,
         annotations=annotations,
+        image_root=image_root,
         bbox_per_image=args.bbox_per_image,
         min_area=args.min_area,
         max_samples=args.max_samples,
