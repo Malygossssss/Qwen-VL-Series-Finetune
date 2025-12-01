@@ -117,13 +117,29 @@ def build_user_prompt(include_image_token: bool) -> str:
     return ("<image>\n" if include_image_token else "") + prompt
 
 
-def build_assistant_response(selected: Iterable[dict], categories: Dict[int, str]) -> str:
+def normalize_bbox(
+    x1: float, y1: float, x2: float, y2: float, width: float, height: float
+) -> list[float]:
+    return [
+        x1 / width * 1000,
+        y1 / height * 1000,
+        x2 / width * 1000,
+        y2 / height * 1000,
+    ]
+
+
+def build_assistant_response(
+    selected: Iterable[dict],
+    categories: Dict[int, str],
+    image_width: float,
+    image_height: float,
+) -> str:
     detections = []
     for ann in selected:
         x1, y1, x2, y2 = coco_bbox_to_xyxy(ann["bbox"])
         detections.append(
             {
-                "bbox_2d": [x1, y1, x2, y2],
+                "bbox_2d": normalize_bbox(x1, y1, x2, y2, image_width, image_height),
                 "label": categories.get(ann.get("category_id", -1), "unknown object"),
             }
         )
@@ -162,7 +178,12 @@ def convert_split(
             continue
 
         user_prompt = build_user_prompt(include_image_token=True)
-        assistant_response = build_assistant_response(selected, categories)
+        assistant_response = build_assistant_response(
+            selected,
+            categories,
+            images[image_id]["width"],
+            images[image_id]["height"],
+        )
         conversations = [
             {"from": "human", "value": user_prompt},
             {"from": "gpt", "value": assistant_response},
